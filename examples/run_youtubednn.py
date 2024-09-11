@@ -1,4 +1,12 @@
+import os
+import sys
+
+project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(project_dir)
+
 import pandas as pd
+import tensorflow as tf
+from collections import Counter
 from deepctr.feature_column import SparseFeat, VarLenSparseFeat
 from deepmatch.models import *
 from deepmatch.utils import sampledsoftmaxloss, NegativeSampler
@@ -8,8 +16,9 @@ from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.models import Model
 
 if __name__ == "__main__":
-
-    data = pd.read_csvdata = pd.read_csv("./movielens_sample.txt")
+    # user_id,movie_id,rating,timestamp,title,genres,gender,age,occupation,zip
+    movielens_file = project_dir + "/examples/movielens_sample.txt"
+    data = pd.read_csvdata = pd.read_csv(movielens_file)
     data['genres'] = list(map(lambda x: x.split('|')[0], data['genres'].values))
 
     sparse_features = ["movie_id", "user_id",
@@ -18,6 +27,13 @@ if __name__ == "__main__":
 
     # 1.Label Encoding for sparse features,and process sequence features with `gen_date_set` and `gen_model_input`
 
+    # feature_max_idx movie_id 209
+    # feature_max_idx user_id 4
+    # feature_max_idx gender 3
+    # feature_max_idx age 4
+    # feature_max_idx occupation 4
+    # feature_max_idx zip 4
+    # feature_max_idx genres 12
     feature_max_idx = {}
     for feature in sparse_features:
         lbe = LabelEncoder()
@@ -36,6 +52,12 @@ if __name__ == "__main__":
 
     train_model_input, train_label = gen_model_input(train_set, user_profile, SEQ_LEN)
     test_model_input, test_label = gen_model_input(test_set, user_profile, SEQ_LEN)
+    print("train_model_input")
+    print(train_model_input)
+    print("train_label")
+    print(train_label)
+    print(tf.__version__)
+    sys.exit()
 
     # 2.count #unique features for each sparse field and generate feature config for sequence feature
 
@@ -46,24 +68,18 @@ if __name__ == "__main__":
                             SparseFeat("age", feature_max_idx['age'], embedding_dim),
                             SparseFeat("occupation", feature_max_idx['occupation'], embedding_dim),
                             SparseFeat("zip", feature_max_idx['zip'], embedding_dim),
-                            VarLenSparseFeat(SparseFeat('hist_movie_id', feature_max_idx['movie_id'], embedding_dim,
-                                                        embedding_name="movie_id"), SEQ_LEN, 'mean', 'hist_len'),
-                            VarLenSparseFeat(SparseFeat('hist_genres', feature_max_idx['genres'], embedding_dim,
-                                                        embedding_name="genres"), SEQ_LEN, 'mean', 'hist_len')
+                            VarLenSparseFeat(SparseFeat('hist_movie_id', feature_max_idx['movie_id'], embedding_dim, embedding_name="movie_id"), SEQ_LEN, 'mean', 'hist_len'),
+                            VarLenSparseFeat(SparseFeat('hist_genres', feature_max_idx['genres'], embedding_dim, embedding_name="genres"), SEQ_LEN, 'mean', 'hist_len')
                             ]
 
     item_feature_columns = [SparseFeat('movie_id', feature_max_idx['movie_id'], embedding_dim)]
 
-    from collections import Counter
-
     train_counter = Counter(train_model_input['movie_id'])
+    print(train_counter)
     item_count = [train_counter.get(i, 0) for i in range(item_feature_columns[0].vocabulary_size)]
     sampler_config = NegativeSampler('frequency', num_sampled=5, item_name='movie_id', item_count=item_count)
 
     # 3.Define Model and train
-
-    import tensorflow as tf
-
     if tf.__version__ >= '2.0.0':
         tf.compat.v1.disable_eager_execution()
     else:
