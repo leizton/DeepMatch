@@ -33,15 +33,10 @@ if __name__ == '__main__':
         print('feature_max_idx %s %s' % (feature, feature_max_idx[feature]))
 
     user_profile = data[['user_id', 'gender', 'age', 'occupation', 'zip']].drop_duplicates('user_id')
-
     item_profile = data[['movie_id']].drop_duplicates('movie_id')
-
     user_profile.set_index('user_id', inplace=True)
 
-    user_item_list = data.groupby('user_id')['movie_id'].apply(list)
-
     train_set, test_set = gen_data_set(data, SEQ_LEN, 0)
-
     train_model_input, train_label = gen_model_input(train_set, user_profile, SEQ_LEN)
     test_model_input, test_label = gen_model_input(test_set, user_profile, SEQ_LEN)
     for e in train_model_input:
