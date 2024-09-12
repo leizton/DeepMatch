@@ -83,7 +83,7 @@ if __name__ == '__main__':
     SEQ_LEN = 50  # 序列最大长度
     embedding_dim = 64
 
-    # 0. Prepare data
+    # 0. Load data
     # user_id,item_id,rating,timestamp,title,categories,gender,age,occupation,zipcode
     data_file = project_dir + '/examples/movielens_sample.txt'
     data = pd.read_csv(data_file)
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     tf.compat.v1.disable_eager_execution()
     model = YoutubeDNN(user_feature_columns, item_feature_columns, user_dnn_hidden_units=(64, embedding_dim), sampler_config=sampler_config)
     model.compile(optimizer='adam', loss=sampledsoftmaxloss)
-    model.fit(train_model_input, train_label, batch_size=256, epochs=10, verbose=1, validation_split=0)
+    model.fit(train_model_input, train_label, batch_size=256, epochs=100, verbose=1, validation_split=0)
 
     # 4. Generate user features for testing and full item features for retrieval
     all_item_model_input = {'item_id': item_table['item_id'].values}
