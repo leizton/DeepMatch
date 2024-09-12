@@ -142,9 +142,11 @@ if __name__ == '__main__':
     user_embedding_model = Model(inputs=model.user_input, outputs=model.user_embedding)
     model_h5_file = project_dir + '/y2bdnn.h5'
     save_model(user_embedding_model, model_h5_file)
+    print('save_model to %s' % model_h5_file)
 
     # Predict
     user_embedding_model = load_model(model_h5_file, custom_objects)
+    print('load_model from %s' % model_h5_file)
     user_embs = user_embedding_model.predict(test_model_input, batch_size=2**12)
     loss_test, loss_baseline = 0., 0.
     test_num = len(user_embs)
