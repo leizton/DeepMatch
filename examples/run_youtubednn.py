@@ -135,7 +135,8 @@ if __name__ == '__main__':
     all_item_model_input = {'item_id': item_table['item_id'].values}
     item_embedding_model = Model(inputs=model.item_input, outputs=model.item_embedding)
     item_embs = item_embedding_model.predict(all_item_model_input, batch_size=2**12)
-    # test
+
+    # 5. Test
     user_embedding_model = Model(inputs=model.user_input, outputs=model.user_embedding)
     user_embs = user_embedding_model.predict(test_model_input, batch_size=2**12)
     loss_test, loss_baseline = 0., 0.
