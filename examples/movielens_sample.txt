@@ -1,4 +1,4 @@
-user_id,movie_id,rating,timestamp,title,genres,gender,age,occupation,zip
+user_id,item_id,rating,timestamp,title,categories,gender,age,occupation,zipcode
 1,1193,5,978300760,One Flew Over the Cuckoo's Nest (1975),Drama,F,1,10,48067
 1,661,3,978302109,James and the Giant Peach (1996),Animation|Children's|Musical,F,1,10,48067
 1,914,3,978301968,My Fair Lady (1964),Musical|Romance,F,1,10,48067
