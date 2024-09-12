@@ -7,14 +7,16 @@ import numpy as np
 import tensorflow as tf
 from collections import Counter
 from sklearn.preprocessing import LabelEncoder
-from tensorflow.python.keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
+from tensorflow.python.keras.models import Model
+from tensorflow.python.keras.models import save_model, load_model
 
 project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_dir)
 from deepctr.feature_column import SparseFeat, VarLenSparseFeat
 from deepmatch.models import *
 from deepmatch.utils import sampledsoftmaxloss, NegativeSampler
+from deepmatch.layers import custom_objects
 
 
 def gen_data_set(data, max_seq_len=50, negsample=5, test_ratio=0.1):
@@ -83,7 +85,7 @@ if __name__ == '__main__':
     SEQ_LEN = 50  # 序列最大长度
     embedding_dim = 64
 
-    # 0. Load data
+    # Load data
     # user_id,item_id,rating,timestamp,title,categories,gender,age,occupation,zipcode
     data_file = project_dir + '/examples/movielens_sample.txt'
     data = pd.read_csv(data_file)
@@ -91,7 +93,7 @@ if __name__ == '__main__':
     data['rating'] = data['rating'].astype(float)
     data['rating'] = (data['rating'] - np.min(data['rating'])) / (np.max(data['rating']) - np.min(data['rating']))
 
-    # 1. Label Encoding for sparse features,and process sequence features with `gen_date_set` and `gen_model_input`
+    # Label Encoding for sparse features,and process sequence features with `gen_date_set` and `gen_model_input`
     feature_max_idx = {}
     sparse_features = ['item_id', 'user_id', 'gender', 'age', 'occupation', 'zipcode', 'categories']
     for feature in sparse_features:
@@ -110,7 +112,7 @@ if __name__ == '__main__':
     test_model_input, test_label = gen_model_input(test_set, user_table, SEQ_LEN)
     print('train_size: %s, test_size: %s' % (len(train_set), len(test_set)))
 
-    # 2. Count unique features for each sparse field and generate feature config for sequence feature
+    # Count unique features for each sparse field and generate feature config for sequence feature
     user_feature_columns = [
         SparseFeat('user_id', feature_max_idx['user_id'], embedding_dim),
         SparseFeat('gender', feature_max_idx['gender'], embedding_dim),
@@ -125,19 +127,24 @@ if __name__ == '__main__':
     item_count = [item_train_counter.get(i, 0) for i in range(item_feature_columns[0].vocabulary_size)]
     sampler_config = NegativeSampler('frequency', num_sampled=5, item_name='item_id', item_count=item_count)
 
-    # 3. Define Model and train
+    # Define Model and train
     tf.compat.v1.disable_eager_execution()
     model = YoutubeDNN(user_feature_columns, item_feature_columns, user_dnn_hidden_units=(64, embedding_dim), sampler_config=sampler_config)
     model.compile(optimizer='adam', loss=sampledsoftmaxloss)
-    model.fit(train_model_input, train_label, batch_size=256, epochs=100, verbose=1, validation_split=0)
+    model.fit(train_model_input, train_label, batch_size=256, epochs=10, verbose=1, validation_split=0)
 
-    # 4. Generate user features for testing and full item features for retrieval
+    # Generate user features for testing and full item features for retrieval
     all_item_model_input = {'item_id': item_table['item_id'].values}
     item_embedding_model = Model(inputs=model.item_input, outputs=model.item_embedding)
     item_embs = item_embedding_model.predict(all_item_model_input, batch_size=2**12)
 
-    # 5. Test
+    # Export model
     user_embedding_model = Model(inputs=model.user_input, outputs=model.user_embedding)
+    model_h5_file = project_dir + '/y2bdnn.h5'
+    save_model(user_embedding_model, model_h5_file)
+
+    # Predict
+    user_embedding_model = load_model(model_h5_file, custom_objects)
     user_embs = user_embedding_model.predict(test_model_input, batch_size=2**12)
     loss_test, loss_baseline = 0., 0.
     test_num = len(user_embs)
