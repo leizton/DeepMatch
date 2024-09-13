@@ -76,6 +76,13 @@ def gen_model_input(train_set, user_table, max_seq_len):
     return train_model_input, train_label
 
 
+def norm_embs(embs):
+    for i in range(len(embs)):
+      if np.linalg.norm(embs[i], ord=2) < 1e-7:
+          embs[i][0] = 1
+    return embs / np.linalg.norm(embs, axis=1, keepdims=True)
+
+
 def calc_emb_sim(v1, v2):
     return (np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)) + 1) * 0.5
 
@@ -137,6 +144,10 @@ if __name__ == '__main__':
     all_item_model_input = {'item_id': item_table['item_id'].values}
     item_embedding_model = Model(inputs=model.item_input, outputs=model.item_embedding)
     item_embs = item_embedding_model.predict(all_item_model_input, batch_size=2**12)
+    item_embs = norm_embs(item_embs)
+    item_emb_map = {}
+    for i, item_id in enumerate(all_item_model_input['item_id']):
+        item_emb_map[item_id] = item_embs[i]
 
     # Export model
     user_embedding_model = Model(inputs=model.user_input, outputs=model.user_embedding)
@@ -148,10 +159,11 @@ if __name__ == '__main__':
     user_embedding_model = load_model(model_h5_file, custom_objects)
     print('load_model from %s' % model_h5_file)
     user_embs = user_embedding_model.predict(test_model_input, batch_size=2**12)
+    user_embs = norm_embs(user_embs)
     loss_test, loss_baseline = 0., 0.
     test_num = len(user_embs)
     for i in range(test_num):
-        item_emb = item_embs[test_model_input['item_id'][i]]
+        item_emb = item_emb_map[test_model_input['item_id'][i]]
         rating_test = calc_emb_sim(user_embs[i], item_emb)
         rating_baseline = 0.5
         rating_true = test_model_input['rating'][i]
