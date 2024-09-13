@@ -66,7 +66,7 @@ def gen_model_input(train_set, user_table, max_seq_len):
     train_model_input = {
         'user_id': train_user_id,
         'item_id': train_item_id,
-        'hist_movie_id': train_item_seq_pad,
+        'hist_item_id': train_item_seq_pad,
         'hist_categories': train_item_category_seq_pad,
         'hist_len': train_hist_len,
         'rating': train_rating,
@@ -119,7 +119,7 @@ if __name__ == '__main__':
         SparseFeat('age', feature_max_idx['age'], embedding_dim),
         SparseFeat('occupation', feature_max_idx['occupation'], embedding_dim),
         SparseFeat('zipcode', feature_max_idx['zipcode'], embedding_dim),
-        VarLenSparseFeat(SparseFeat('hist_movie_id', feature_max_idx['item_id'], embedding_dim, embedding_name='item_id'), SEQ_LEN, 'mean', 'hist_len'),
+        VarLenSparseFeat(SparseFeat('hist_item_id', feature_max_idx['item_id'], embedding_dim, embedding_name='item_id'), SEQ_LEN, 'mean', 'hist_len'),
         VarLenSparseFeat(SparseFeat('hist_categories', feature_max_idx['categories'], embedding_dim, embedding_name='categories'), SEQ_LEN, 'mean', 'hist_len')
     ]
     item_feature_columns = [SparseFeat('item_id', feature_max_idx['item_id'], embedding_dim)]
